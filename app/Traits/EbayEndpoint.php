@@ -58,8 +58,7 @@ trait EbayEndpoint
                 $count++;
             }
         }
-        //$url = $url . "itemFilter($count).name=HideDuplicateItems&";
-        //$url = $url . "itemFilter($count).value(0)=true&";
+
 
         return $url;
     }
