@@ -12,13 +12,11 @@ trait EbayEndpoint
         $main_url = $this->ebayfindItemsAdvancedApiUrl();
         $url = $this->addParams($params, $main_url);
         $response = Http::get(rtrim($url, "&"))->json();
-
         if ($response['findItemsAdvancedResponse'][0]['ack'][0] == "Failure") {
             return ['error' => 'Api Error'];
         }
 
         if ($response['findItemsAdvancedResponse'][0]['searchResult'][0]['@count'] == "0") {
-
             return ['error' => 'no products'];
         }
 
@@ -33,7 +31,7 @@ trait EbayEndpoint
     {
         $url = config('app.ebay_endpoint') . "?";
         $url = $url . "OPERATION-NAME=findItemsAdvanced&";
-        $url = $url . "SERVICE-VERSION=1.0.0&";
+        $url = $url . "SERVICE-VERSION=1.13.0&";
         $url = $url . "SECURITY-APPNAME=" . config('app.ebay_app_id') . "&";
         $url = $url . "RESPONSE-DATA-FORMAT=JSON&";
         $url = $url . "REST-PAYLOAD&";
@@ -48,6 +46,7 @@ trait EbayEndpoint
     {
         $itemFilters = ['MaxPrice', "MinPrice"];
         $count = 0;
+
         foreach ($params as $key => $value) {
             if (!in_array($key, $itemFilters) && $value) {
                 $url = $url . str_replace("_", ".", $key) . "=" . urlencode($value) . "&";
@@ -55,10 +54,12 @@ trait EbayEndpoint
 
             if (in_array($key, $itemFilters) && $value) {
                 $url = $url . "itemFilter($count).name=" . $key . "&";
-                $url = $url . "itemFilter($count).value=" . $params[$key] . "&";
+                $url = $url . "itemFilter($count).value=" . $value . "&";
                 $count++;
             }
         }
+        //$url = $url . "itemFilter($count).name=HideDuplicateItems&";
+        //$url = $url . "itemFilter($count).value(0)=true&";
 
         return $url;
     }

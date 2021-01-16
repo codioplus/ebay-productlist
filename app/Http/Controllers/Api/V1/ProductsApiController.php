@@ -16,51 +16,65 @@ class ProductsApiController extends Controller
     use EbayEndpoint;
     public function index(Request $request)
     {
-        $keywords =  $request->get('keywords');
-        $price_max = $request->get('price_max');
-        $price_min = $request->get('price_min');
-        $sorting = $request->get('sorting');
-
-        if (!$keywords) {
-            return ['error' => 'no keywords'];
+        $req = $request->all();
+        if (!$this->validateParams($req)) {
+            return ['error' => 'error check params'];
         }
-
-        $request = array(
-            'params' =>
-            array(
-                'keywords' => urlencode($keywords),
-                'MaxPrice' => $price_max,
-                'MinPrice' => $price_min,
-                'sort' => $sorting,
-            ),
-        );
-        $result =  $this->findItemsAdvanced($request['params']);
+        $params = $this->designParams($req);
+        $result =  $this->findItemsAdvanced($params);
         if (isset($result["error"])) {
             return $result;
         }
-        $return = $this->sortResults($result, $request['params']['sort'], 'by_price_asc');
-        return $return;
+
+        return $result;
     }
 
     public function search(Request $request)
     {
-        $result =  $this->findItemsAdvanced($request['params']);
+        $req = $request['params'];
+        if (!$this->validateParams($req)) {
+            return ['error' => 'error check params'];
+        }
+        $params = $this->designParams($req);
+        $result =  $this->findItemsAdvanced($params);
         if (isset($result["error"])) {
             return $result;
         }
-        $return = $this->sortResults($result, $request['params']['sort'], 'Price Lowest First');
-        return $return;
+
+        return $result;
     }
 
-
-    public function sortResults($data, $req, $sort)
+    public function designParams($params)
     {
-        if ($req == $sort) {
-            uasort($data, function ($item, $compare) {
-                return $item['price'] >= $compare['price'];
-            });
-            return array_values($data);
+        $newParams = [];
+        foreach ($params as $key => $param) {
+
+            if (empty($param)) continue;
+
+            $paramExplode = explode('_', $key);
+            if (count($paramExplode) == 2) {
+                $paramKey = ucfirst($paramExplode[1]) . ucfirst($paramExplode[0]);
+                $paramValue = $param;
+            } else if (($key == 'sort') || ($key == 'sorting')) {
+                if (($param == 'Price Lowest First') || ($param == 'by_price_asc')) {
+                    $paramKey = 'sortOrder';
+                    $paramValue = 'PricePlusShippingLowest';
+                }
+            } else {
+                $paramKey = $key;
+                $paramValue = $param;
+            }
+
+            $newParams[$paramKey] = $paramValue;
         }
-        return $data;
+        return $newParams;
+    }
+
+    public function validateParams($request)
+    {
+        if (!isset($request['keywords'])) {
+            return false;
+        }
+        return true;
     }
 }
